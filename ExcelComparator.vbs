@@ -52,8 +52,21 @@ Sub CompareExcelFiles()
     End If
     
     ' 打开选择的Excel文件
-    Set wbA = Workbooks.Open(filePathA)
-    Set wbB = Workbooks.Open(filePathB)
+    On Error Resume Next
+    Set wbA = Workbooks.Open(filePathA, ReadOnly:=False)
+    If Err.Number <> 0 Then
+        MsgBox "无法以可写模式打开第一个文件: " & Err.Description, vbExclamation
+        Err.Clear
+        Set wbA = Workbooks.Open(filePathA, ReadOnly:=True)
+    End If
+    
+    Set wbB = Workbooks.Open(filePathB, ReadOnly:=False)
+    If Err.Number <> 0 Then
+        MsgBox "无法以可写模式打开第二个文件: " & Err.Description, vbExclamation
+        Err.Clear
+        Set wbB = Workbooks.Open(filePathB, ReadOnly:=True)
+    End If
+    On Error GoTo 0
     
     ' 假设比较第一个工作表
     Set wsA = wbA.Worksheets(1)
@@ -119,10 +132,22 @@ Sub CompareExcelFiles()
     wsB.Columns.AutoFit
     
     ' 保存并关闭源文件
+    On Error Resume Next
     wbA.Save
+    If Err.Number <> 0 Then
+        MsgBox "无法保存第一个文件: " & Err.Description & "。文件可能是只读的。", vbExclamation
+        Err.Clear
+    End If
+    
     wbB.Save
-    wbA.Close SaveChanges:=True
-    wbB.Close SaveChanges:=True
+    If Err.Number <> 0 Then
+        MsgBox "无法保存第二个文件: " & Err.Description & "。文件可能是只读的。", vbExclamation
+        Err.Clear
+    End If
+    
+    wbA.Close SaveChanges:=(Err.Number = 0)
+    wbB.Close SaveChanges:=(Err.Number = 0)
+    On Error GoTo 0
     
     ' 显示结果
     MsgBox "比较完成！红色行表示仅在一个文件中存在的行，黄色单元格表示内容不一致的单元格。已在原文件中标记。", vbInformation
